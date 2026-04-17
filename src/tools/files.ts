@@ -31,7 +31,7 @@ export function registerFileTools(server: McpServer, client: CpanelClient) {
     async ({ path, content }) =>
       handleToolCall(async () => {
         const { dir, file } = splitPath(path);
-        const result = await client.uapi("Fileman", "save_file_content", {
+        const result = await client.uapiPost("Fileman", "save_file_content", {
           dir,
           file,
           content,
@@ -65,7 +65,7 @@ export function registerFileTools(server: McpServer, client: CpanelClient) {
     async ({ path, content }) =>
       handleToolCall(async () => {
         const { dir, file } = splitPath(path);
-        const result = await client.uapi("Fileman", "save_file_content", {
+        const result = await client.uapiPost("Fileman", "save_file_content", {
           dir,
           file,
           content,

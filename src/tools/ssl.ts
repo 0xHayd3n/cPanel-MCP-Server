@@ -41,7 +41,7 @@ export function registerSslTools(server: McpServer, client: CpanelClient) {
         const d = validateDomain(domain);
         const params: Record<string, string> = { domain: d, cert, key };
         if (cabundle) params.cabundle = cabundle;
-        const result = await client.uapi("SSL", "install_ssl", params);
+        const result = await client.uapiPost("SSL", "install_ssl", params);
         return formatSuccess(`SSL certificate installed for: ${d}`, result.data);
       })
   );

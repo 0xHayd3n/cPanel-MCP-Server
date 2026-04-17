@@ -285,10 +285,6 @@ export class CpanelClient {
     return parsed.cpanelresult?.data;
   }
 
-  getUsername(): string {
-    return this.username;
-  }
-
   destroy(): void {
     this.httpsAgent.destroy();
     this.httpAgent.destroy();
