@@ -7,7 +7,7 @@ import { validatePath } from "../validation.js";
 export function registerVirusScannerTools(server: McpServer, client: CpanelClient) {
   server.tool(
     "start_virus_scan",
-    "Start a ClamAV virus scan on a directory",
+    "Start a ClamAV virus scan on a directory (requires ClamAV plugin on server)",
     { path: z.string().default("/home").describe("Directory path to scan") },
     async ({ path }) =>
       handleToolCall(async () => {

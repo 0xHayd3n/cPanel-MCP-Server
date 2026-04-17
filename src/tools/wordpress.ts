@@ -6,7 +6,7 @@ import { handleToolCall, formatData } from "../tool-helpers.js";
 export function registerWordPressTools(server: McpServer, client: CpanelClient) {
   server.tool(
     "list_wordpress_installations",
-    "List all WordPress installations managed by cPanel",
+    "List all WordPress installations managed by cPanel (requires WP Toolkit or Instance Manager on server)",
     {},
     async () =>
       handleToolCall(async () => {

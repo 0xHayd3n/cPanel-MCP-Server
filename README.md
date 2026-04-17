@@ -83,7 +83,7 @@ A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting 
 - **Setup** — generate secret/QR code, enable with verification
 - **Remove** — disable 2FA
 
-### Virus Scanner (ClamAV)
+### Virus Scanner (ClamAV) *requires ClamAV plugin*
 - **Scan** — start virus scan on a directory
 - **Status** — check scan progress
 - **Results** — list infected files, quarantine/disinfect
@@ -109,9 +109,9 @@ A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting 
 - **Server port** info
 
 ### Applications & Deployment
-- **WordPress** — list installations (requires WP Toolkit / Instance Manager)
-- **Node.js/Python/Ruby apps** — register, unregister, enable, disable, install dependencies (Phusion Passenger)
-- **Git repositories** — create, list, update, delete, and deploy via `.cpanel.yml`
+- **WordPress** — list installations *(requires WP Toolkit / Instance Manager)*
+- **Node.js/Python/Ruby apps** — register, unregister, enable, disable, install dependencies *(requires Phusion Passenger)*
+- **Git repositories** — create, list, update, delete, and deploy via `.cpanel.yml` *(requires Git Version Control feature)*
 
 ### Account Management
 - **API tokens** — list, create, rename, and revoke
@@ -152,6 +152,16 @@ Add the following to your MCP settings configuration (e.g., `claude_desktop_conf
 ```
 
 Replace the placeholder values with your actual cPanel credentials.
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `CPANEL_USERNAME` | Yes | — | cPanel account username |
+| `CPANEL_API_TOKEN` | Yes | — | API token for authentication |
+| `CPANEL_SERVER_URL` | Yes | — | cPanel server URL (e.g., `https://example.com:2083`) |
+| `CPANEL_TIMEOUT_MS` | No | `30000` | Request timeout in milliseconds |
+| `CPANEL_VERIFY_SSL` | No | `true` | Set to `false` to disable SSL certificate verification (for self-signed certs) |
 
 ### Getting a cPanel API Token
 
