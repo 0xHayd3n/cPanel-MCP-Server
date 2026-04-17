@@ -1,0 +1,37 @@
+{
+  "name": "cpanel-mcp-server",
+  "version": "2.0.0",
+  "description": "A comprehensive MCP server for cPanel hosting management — DNS, email, databases, domains, SSL, PHP, cron, security, metrics, backups, and more.",
+  "main": "build/index.js",
+  "type": "module",
+  "bin": {
+    "cpanel-mcp-server": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "dev": "tsc --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xHayd3n/cPanel-MCP-Server"
+  },
+  "keywords": [
+    "mcp",
+    "cpanel",
+    "hosting",
+    "model-context-protocol",
+    "ai",
+    "web-hosting"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
+  }
+}
