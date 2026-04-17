@@ -13,8 +13,8 @@ export function registerSecurityTools(server: McpServer, client: CpanelClient) {
     {},
     async () =>
       handleToolCall(async () => {
-        const result = await client.uapi("BlockIP", "get_ips");
-        return formatData(result.data);
+        const data = await client.api2("DenyIp", "listdenyips");
+        return formatData(data);
       })
   );
 

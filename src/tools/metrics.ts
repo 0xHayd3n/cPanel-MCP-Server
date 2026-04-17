@@ -29,13 +29,14 @@ export function registerMetricsTools(server: McpServer, client: CpanelClient) {
 
   server.tool(
     "get_error_log",
-    "Get the most recent entries from the error log",
+    "Get the most recent entries from the site error log",
     {
-      lines: z.string().default("100").describe("Number of lines to retrieve"),
+      domain: z.string().describe("Domain to get errors for"),
     },
-    async ({ lines }) =>
+    async ({ domain }) =>
       handleToolCall(async () => {
-        const result = await client.uapi("Logd", "get_recent_errors", { lines });
+        const d = validateDomain(domain);
+        const result = await client.uapi("Stats", "get_site_errors", { domain: d });
         return formatData(result.data);
       })
   );

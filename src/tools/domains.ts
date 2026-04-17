@@ -36,8 +36,8 @@ export function registerDomainTools(server: McpServer, client: CpanelClient) {
     {},
     async () =>
       handleToolCall(async () => {
-        const result = await client.uapi("SubDomain", "list_subdomains");
-        return formatData(result.data);
+        const data = await client.api2("SubDomain", "listsubdomains");
+        return formatData(data);
       })
   );
 
@@ -54,8 +54,8 @@ export function registerDomainTools(server: McpServer, client: CpanelClient) {
         const d = validateDomain(domain);
         const params: Record<string, string> = { domain: subdomain, rootdomain: d };
         if (document_root) params.dir = document_root;
-        const result = await client.uapi("SubDomain", "addsubdomain", params);
-        return formatSuccess(`Subdomain created: ${subdomain}.${d}`, result.data);
+        const data = await client.api2("SubDomain", "addsubdomain", params);
+        return formatSuccess(`Subdomain created: ${subdomain}.${d}`, data);
       })
   );
 
@@ -65,12 +65,12 @@ export function registerDomainTools(server: McpServer, client: CpanelClient) {
     { subdomain: z.string().describe("Full subdomain (e.g., 'blog.example.com')") },
     async ({ subdomain }) =>
       handleToolCall(async () => {
-        const result = await client.uapi("SubDomain", "delsubdomain", { domain: subdomain });
-        return formatSuccess(`Subdomain deleted: ${subdomain}`, result.data);
+        const data = await client.api2("SubDomain", "delsubdomain", { domain: subdomain });
+        return formatSuccess(`Subdomain deleted: ${subdomain}`, data);
       })
   );
 
-  // --- Addon Domains ---
+  // --- Addon Domains (API2 — no UAPI equivalent) ---
 
   server.tool(
     "list_addon_domains",
@@ -78,8 +78,8 @@ export function registerDomainTools(server: McpServer, client: CpanelClient) {
     {},
     async () =>
       handleToolCall(async () => {
-        const result = await client.uapi("AddonDomain", "list_addon_domains");
-        return formatData(result.data);
+        const data = await client.api2("AddonDomain", "listaddondomains");
+        return formatData(data);
       })
   );
 
@@ -94,12 +94,12 @@ export function registerDomainTools(server: McpServer, client: CpanelClient) {
     async ({ domain, subdomain, document_root }) =>
       handleToolCall(async () => {
         const d = validateDomain(domain);
-        const result = await client.uapi("AddonDomain", "addaddondomain", {
+        const data = await client.api2("AddonDomain", "addaddondomain", {
           newdomain: d,
           subdomain,
           dir: document_root,
         });
-        return formatSuccess(`Addon domain created: ${d}`, result.data);
+        return formatSuccess(`Addon domain created: ${d}`, data);
       })
   );
 
@@ -112,15 +112,15 @@ export function registerDomainTools(server: McpServer, client: CpanelClient) {
     },
     async ({ domain, subdomain }) =>
       handleToolCall(async () => {
-        const result = await client.uapi("AddonDomain", "deladdondomain", {
+        const data = await client.api2("AddonDomain", "deladdondomain", {
           domain,
           subdomain,
         });
-        return formatSuccess(`Addon domain deleted: ${domain}`, result.data);
+        return formatSuccess(`Addon domain deleted: ${domain}`, data);
       })
   );
 
-  // --- Parked Domains (Aliases) ---
+  // --- Parked Domains / Aliases (API2 — no UAPI equivalent) ---
 
   server.tool(
     "list_parked_domains",
@@ -128,8 +128,8 @@ export function registerDomainTools(server: McpServer, client: CpanelClient) {
     {},
     async () =>
       handleToolCall(async () => {
-        const result = await client.uapi("Park", "list_parked_domains");
-        return formatData(result.data);
+        const data = await client.api2("Park", "listparkeddomains");
+        return formatData(data);
       })
   );
 
@@ -140,8 +140,8 @@ export function registerDomainTools(server: McpServer, client: CpanelClient) {
     async ({ domain }) =>
       handleToolCall(async () => {
         const d = validateDomain(domain);
-        const result = await client.uapi("Park", "park", { domain: d });
-        return formatSuccess(`Domain parked: ${d}`, result.data);
+        const data = await client.api2("Park", "park", { domain: d });
+        return formatSuccess(`Domain parked: ${d}`, data);
       })
   );
 
@@ -151,12 +151,12 @@ export function registerDomainTools(server: McpServer, client: CpanelClient) {
     { domain: z.string().describe("Parked domain to remove") },
     async ({ domain }) =>
       handleToolCall(async () => {
-        const result = await client.uapi("Park", "unpark", { domain });
-        return formatSuccess(`Parked domain removed: ${domain}`, result.data);
+        const data = await client.api2("Park", "unpark", { domain });
+        return formatSuccess(`Parked domain removed: ${domain}`, data);
       })
   );
 
-  // --- Redirects ---
+  // --- Redirects (UAPI Mime module) ---
 
   server.tool(
     "list_redirects",

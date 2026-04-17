@@ -8,8 +8,7 @@ A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting 
 - **List, create, read, edit, and delete files** in your hosting account
 
 ### Disk Usage
-- **Account quota info** — check disk space consumption
-- **Directory usage breakdown** — see what's using space
+- **Account quota info** — check disk space consumption and limits
 
 ### MySQL Database Management
 - **Full CRUD** for databases, users, and privileges
@@ -37,7 +36,7 @@ A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting 
 - **Greylisting** — enable/disable for all domains
 
 ### DNS Management
-- **List zones** and **parse zone records** for any domain
+- **Get zone records** for any domain (via API2 ZoneEdit)
 - **Add, edit, and delete** DNS records (A, AAAA, CNAME, MX, TXT, SRV, CAA)
 
 ### DNSSEC
@@ -161,18 +160,18 @@ Replace the placeholder values with your actual cPanel credentials.
 3. Create a new token with a descriptive name
 4. Copy the token — it won't be shown again
 
-## Available Tools (166 total)
+## Available Tools (164 total)
 
 | Category | Count |
 |----------|-------|
 | File Management | 5 |
-| Disk Usage | 2 |
+| Disk Usage | 1 |
 | MySQL | 9 |
 | PostgreSQL | 8 |
 | Email (accounts, forwarders, autoresponders) | 12 |
 | Email Authentication (DKIM/SPF/PTR) | 7 |
 | Email Filters & Spam | 12 |
-| DNS | 5 |
+| DNS | 4 |
 | DNSSEC | 6 |
 | Domains (addon, sub, parked, redirects) | 14 |
 | Cron Jobs | 6 |
@@ -227,9 +226,15 @@ src/
 
 ## API Compatibility
 
-- **UAPI** (preferred) — used for all modules except cron jobs
-- **API2** (legacy) — used for cron jobs, as cPanel has no UAPI equivalent for this module
-- Both are called through the same authenticated API client with automatic error handling
+- **UAPI** (preferred) — used for most modules
+- **API2** (legacy) — used where cPanel has no UAPI equivalent:
+  - **Cron jobs** — `Cron::fetchcron`, `add_line`, `edit_line`, `remove_line`, `get_email`, `set_email`
+  - **DNS records** — `ZoneEdit::fetchzone_records`, `add_zone_record`, `edit_zone_record`, `remove_zone_record`
+  - **Subdomains** — `SubDomain::listsubdomains`, `addsubdomain`, `delsubdomain`
+  - **Addon domains** — `AddonDomain::listaddondomains`, `addaddondomain`, `deladdondomain`
+  - **Parked domains** — `Park::listparkeddomains`, `park`, `unpark`
+  - **IP blocking list** — `DenyIp::listdenyips`
+- Both API versions share the same authenticated client with retry logic and error handling
 
 ## Security
 

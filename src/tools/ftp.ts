@@ -79,7 +79,7 @@ export function registerFtpTools(server: McpServer, client: CpanelClient) {
     },
     async ({ user, quota, domain }) =>
       handleToolCall(async () => {
-        const result = await client.uapi("Ftp", "setquota", { user, quota, domain });
+        const result = await client.uapi("Ftp", "set_quota", { user, quota, domain });
         return formatSuccess(`FTP quota updated for ${user}@${domain}: ${quota}MB`, result.data);
       })
   );
