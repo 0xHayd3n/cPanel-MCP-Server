@@ -1,46 +1,51 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { CpanelClient } from "../cpanel-api.js";
+import { handleToolCall, formatData, formatSuccess } from "../tool-helpers.js";
 
 export function registerPostgresqlTools(server: McpServer, client: CpanelClient) {
   server.tool(
     "list_postgresql_databases",
     "List all PostgreSQL databases",
     {},
-    async () => {
-      const result = await client.uapi("Postgresql", "list_databases");
-      return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
-    }
+    async () =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Postgresql", "list_databases");
+        return formatData(result.data);
+      })
   );
 
   server.tool(
     "create_postgresql_database",
     "Create a new PostgreSQL database",
     { name: z.string().describe("Database name") },
-    async ({ name }) => {
-      const result = await client.uapi("Postgresql", "create_database", { name });
-      return { content: [{ type: "text", text: `PostgreSQL database created: ${name}` }] };
-    }
+    async ({ name }) =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Postgresql", "create_database", { name });
+        return formatSuccess(`PostgreSQL database created: ${name}`, result.data);
+      })
   );
 
   server.tool(
     "delete_postgresql_database",
     "Delete a PostgreSQL database",
     { name: z.string().describe("Database name to delete") },
-    async ({ name }) => {
-      const result = await client.uapi("Postgresql", "delete_database", { name });
-      return { content: [{ type: "text", text: `PostgreSQL database deleted: ${name}` }] };
-    }
+    async ({ name }) =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Postgresql", "delete_database", { name });
+        return formatSuccess(`PostgreSQL database deleted: ${name}`, result.data);
+      })
   );
 
   server.tool(
     "list_postgresql_users",
     "List all PostgreSQL users",
     {},
-    async () => {
-      const result = await client.uapi("Postgresql", "list_users");
-      return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
-    }
+    async () =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Postgresql", "list_users");
+        return formatData(result.data);
+      })
   );
 
   server.tool(
@@ -50,20 +55,22 @@ export function registerPostgresqlTools(server: McpServer, client: CpanelClient)
       name: z.string().describe("Username"),
       password: z.string().describe("Password"),
     },
-    async ({ name, password }) => {
-      const result = await client.uapi("Postgresql", "create_user", { name, password });
-      return { content: [{ type: "text", text: `PostgreSQL user created: ${name}` }] };
-    }
+    async ({ name, password }) =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Postgresql", "create_user", { name, password });
+        return formatSuccess(`PostgreSQL user created: ${name}`, result.data);
+      })
   );
 
   server.tool(
     "delete_postgresql_user",
     "Delete a PostgreSQL user",
     { name: z.string().describe("Username to delete") },
-    async ({ name }) => {
-      const result = await client.uapi("Postgresql", "delete_user", { name });
-      return { content: [{ type: "text", text: `PostgreSQL user deleted: ${name}` }] };
-    }
+    async ({ name }) =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Postgresql", "delete_user", { name });
+        return formatSuccess(`PostgreSQL user deleted: ${name}`, result.data);
+      })
   );
 
   server.tool(
@@ -73,13 +80,11 @@ export function registerPostgresqlTools(server: McpServer, client: CpanelClient)
       user: z.string().describe("PostgreSQL username"),
       database: z.string().describe("Database name"),
     },
-    async ({ user, database }) => {
-      const result = await client.uapi("Postgresql", "grant_all_privileges", {
-        user,
-        database,
-      });
-      return { content: [{ type: "text", text: `PostgreSQL privileges granted for ${user} on ${database}` }] };
-    }
+    async ({ user, database }) =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Postgresql", "grant_all_privileges", { user, database });
+        return formatSuccess(`PostgreSQL privileges granted for ${user} on ${database}`, result.data);
+      })
   );
 
   server.tool(
@@ -89,12 +94,10 @@ export function registerPostgresqlTools(server: McpServer, client: CpanelClient)
       user: z.string().describe("PostgreSQL username"),
       database: z.string().describe("Database name"),
     },
-    async ({ user, database }) => {
-      const result = await client.uapi("Postgresql", "revoke_all_privileges", {
-        user,
-        database,
-      });
-      return { content: [{ type: "text", text: `PostgreSQL privileges revoked for ${user} on ${database}` }] };
-    }
+    async ({ user, database }) =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Postgresql", "revoke_all_privileges", { user, database });
+        return formatSuccess(`PostgreSQL privileges revoked for ${user} on ${database}`, result.data);
+      })
   );
 }

@@ -2,6 +2,11 @@ import https from "node:https";
 import http from "node:http";
 import { URL } from "node:url";
 
+const DEFAULT_TIMEOUT_MS = 30_000;
+const MAX_RESPONSE_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 1000;
+
 export interface CpanelApiResponse {
   status: number;
   errors: string[] | null;
@@ -35,6 +40,9 @@ export class CpanelClient {
   private readonly baseUrl: string;
   private readonly username: string;
   private readonly apiToken: string;
+  private readonly httpsAgent: https.Agent;
+  private readonly httpAgent: http.Agent;
+  private readonly timeoutMs: number;
 
   constructor() {
     const username = process.env.CPANEL_USERNAME;
@@ -50,6 +58,20 @@ export class CpanelClient {
     this.username = username;
     this.apiToken = apiToken;
     this.baseUrl = serverUrl.replace(/\/+$/, "");
+    this.timeoutMs = Number(process.env.CPANEL_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS;
+
+    const rejectUnauthorized = process.env.CPANEL_VERIFY_SSL !== "false";
+
+    this.httpsAgent = new https.Agent({
+      keepAlive: true,
+      maxSockets: 5,
+      rejectUnauthorized,
+    });
+
+    this.httpAgent = new http.Agent({
+      keepAlive: true,
+      maxSockets: 5,
+    });
   }
 
   private buildHeaders(): Record<string, string> {
@@ -59,14 +81,11 @@ export class CpanelClient {
     };
   }
 
-  private request(
-    method: string,
-    url: string,
-    body?: string
-  ): Promise<string> {
+  private request(method: string, url: string, body?: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const parsed = new URL(url);
-      const transport = parsed.protocol === "https:" ? https : http;
+      const isHttps = parsed.protocol === "https:";
+      const transport = isHttps ? https : http;
 
       const options: https.RequestOptions = {
         hostname: parsed.hostname,
@@ -74,7 +93,8 @@ export class CpanelClient {
         path: parsed.pathname + parsed.search,
         method,
         headers: this.buildHeaders(),
-        rejectUnauthorized: false,
+        agent: isHttps ? this.httpsAgent : this.httpAgent,
+        timeout: this.timeoutMs,
       };
 
       if (body) {
@@ -86,13 +106,28 @@ export class CpanelClient {
 
       const req = transport.request(options, (res) => {
         const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        let totalBytes = 0;
+
+        res.on("data", (chunk: Buffer) => {
+          totalBytes += chunk.length;
+          if (totalBytes > MAX_RESPONSE_BYTES) {
+            req.destroy();
+            reject(
+              new CpanelApiError(
+                `Response exceeded ${MAX_RESPONSE_BYTES} bytes limit`
+              )
+            );
+            return;
+          }
+          chunks.push(chunk);
+        });
+
         res.on("end", () => {
           const responseBody = Buffer.concat(chunks).toString("utf-8");
           if (res.statusCode && res.statusCode >= 400) {
             reject(
               new CpanelApiError(
-                `HTTP ${res.statusCode}: ${responseBody}`,
+                `HTTP ${res.statusCode}: ${responseBody.substring(0, 500)}`,
                 res.statusCode
               )
             );
@@ -100,6 +135,15 @@ export class CpanelClient {
             resolve(responseBody);
           }
         });
+
+        res.on("error", (err) =>
+          reject(new CpanelApiError(`Response error: ${err.message}`))
+        );
+      });
+
+      req.on("timeout", () => {
+        req.destroy();
+        reject(new CpanelApiError(`Request timed out after ${this.timeoutMs}ms`));
       });
 
       req.on("error", (err) =>
@@ -111,22 +155,52 @@ export class CpanelClient {
     });
   }
 
+  private async requestWithRetry(
+    method: string,
+    url: string,
+    body?: string
+  ): Promise<string> {
+    let lastError: Error | undefined;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return await this.request(method, url, body);
+      } catch (err) {
+        lastError = err as Error;
+
+        if (err instanceof CpanelApiError && err.statusCode && err.statusCode < 500) {
+          throw err;
+        }
+
+        if (attempt < MAX_RETRIES) {
+          const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+          console.error(`[API] Retry ${attempt + 1}/${MAX_RETRIES} after ${delay}ms`);
+          await new Promise((r) => setTimeout(r, delay));
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
   async uapi(
     module: string,
     func: string,
     params: Record<string, string> = {}
   ): Promise<CpanelApiResponse> {
     const query = new URLSearchParams(params).toString();
-    const url = `${this.baseUrl}/execute/${module}/${func}${query ? "?" + query : ""}`;
+    const url = `${this.baseUrl}/execute/${encodeURIComponent(module)}/${encodeURIComponent(func)}${query ? "?" + query : ""}`;
 
     console.error(`[API] UAPI ${module}::${func}`);
 
-    const raw = await this.request("GET", url);
+    const raw = await this.requestWithRetry("GET", url);
     let parsed: { result: CpanelApiResponse };
     try {
       parsed = JSON.parse(raw);
     } catch {
-      throw new CpanelApiError(`Invalid JSON response from cPanel: ${raw.substring(0, 200)}`);
+      throw new CpanelApiError(
+        `Invalid JSON response from UAPI ${module}::${func}`
+      );
     }
 
     const result = parsed.result ?? (parsed as unknown as CpanelApiResponse);
@@ -147,17 +221,19 @@ export class CpanelClient {
     func: string,
     params: Record<string, string> = {}
   ): Promise<CpanelApiResponse> {
-    const url = `${this.baseUrl}/execute/${module}/${func}`;
+    const url = `${this.baseUrl}/execute/${encodeURIComponent(module)}/${encodeURIComponent(func)}`;
     const body = new URLSearchParams(params).toString();
 
     console.error(`[API] UAPI POST ${module}::${func}`);
 
-    const raw = await this.request("POST", url, body);
+    const raw = await this.requestWithRetry("POST", url, body);
     let parsed: { result: CpanelApiResponse };
     try {
       parsed = JSON.parse(raw);
     } catch {
-      throw new CpanelApiError(`Invalid JSON response from cPanel: ${raw.substring(0, 200)}`);
+      throw new CpanelApiError(
+        `Invalid JSON response from UAPI ${module}::${func}`
+      );
     }
 
     const result = parsed.result ?? (parsed as unknown as CpanelApiResponse);
@@ -190,12 +266,14 @@ export class CpanelClient {
 
     console.error(`[API] API2 ${module}::${func}`);
 
-    const raw = await this.request("GET", url);
+    const raw = await this.requestWithRetry("GET", url);
     let parsed: CpanelApi2Response;
     try {
       parsed = JSON.parse(raw);
     } catch {
-      throw new CpanelApiError(`Invalid JSON response from cPanel: ${raw.substring(0, 200)}`);
+      throw new CpanelApiError(
+        `Invalid JSON response from API2 ${module}::${func}`
+      );
     }
 
     if (parsed.cpanelresult?.error) {
@@ -209,5 +287,10 @@ export class CpanelClient {
 
   getUsername(): string {
     return this.username;
+  }
+
+  destroy(): void {
+    this.httpsAgent.destroy();
+    this.httpAgent.destroy();
   }
 }

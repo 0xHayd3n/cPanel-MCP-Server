@@ -100,6 +100,15 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
+  const shutdown = () => {
+    console.error("[Shutdown] Cleaning up...");
+    cpanelClient.destroy();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+
   console.error("[Setup] cPanel MCP Server running on stdio");
 }
 

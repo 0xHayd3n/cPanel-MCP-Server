@@ -1,26 +1,31 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { CpanelClient } from "../cpanel-api.js";
+import { handleToolCall, formatData, formatSuccess } from "../tool-helpers.js";
+import { validateDomain } from "../validation.js";
 
 export function registerDnsTools(server: McpServer, client: CpanelClient) {
   server.tool(
     "list_dns_zones",
     "List all DNS zones on the account",
     {},
-    async () => {
-      const result = await client.uapi("DNS", "list_dns_zones");
-      return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
-    }
+    async () =>
+      handleToolCall(async () => {
+        const result = await client.uapi("DNS", "list_dns_zones");
+        return formatData(result.data);
+      })
   );
 
   server.tool(
     "get_dns_records",
     "Get all DNS records for a zone/domain",
     { domain: z.string().describe("Domain name to get records for") },
-    async ({ domain }) => {
-      const result = await client.uapi("DNS", "parse_zone", { zone: domain });
-      return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
-    }
+    async ({ domain }) =>
+      handleToolCall(async () => {
+        const zone = validateDomain(domain);
+        const result = await client.uapi("DNS", "parse_zone", { zone });
+        return formatData(result.data);
+      })
   );
 
   server.tool(
@@ -35,23 +40,25 @@ export function registerDnsTools(server: McpServer, client: CpanelClient) {
       priority: z.string().optional().describe("Priority (required for MX and SRV)"),
       class: z.string().default("IN").describe("Record class"),
     },
-    async ({ domain, name, type, address, ttl, priority, class: recordClass }) => {
-      const params: Record<string, string> = {
-        zone: domain,
-        name,
-        type,
-        address,
-        ttl,
-        class: recordClass,
-      };
-      if (priority) params.preference = priority;
+    async ({ domain, name, type, address, ttl, priority, class: recordClass }) =>
+      handleToolCall(async () => {
+        const zone = validateDomain(domain);
+        const params: Record<string, string> = {
+          zone,
+          name,
+          type,
+          address,
+          ttl,
+          class: recordClass,
+        };
+        if (priority) params.preference = priority;
 
-      const result = await client.uapi("DNS", "mass_edit_zone", {
-        zone: domain,
-        "add": JSON.stringify(params),
-      });
-      return { content: [{ type: "text", text: `DNS ${type} record added: ${name} → ${address}` }] };
-    }
+        const result = await client.uapi("DNS", "mass_edit_zone", {
+          zone,
+          add: JSON.stringify(params),
+        });
+        return formatSuccess(`DNS ${type} record added: ${name} → ${address}`, result.data);
+      })
   );
 
   server.tool(
@@ -65,13 +72,15 @@ export function registerDnsTools(server: McpServer, client: CpanelClient) {
       address: z.string().describe("New record value"),
       ttl: z.string().default("14400").describe("TTL in seconds"),
     },
-    async ({ domain, line, name, type, address, ttl }) => {
-      const result = await client.uapi("DNS", "mass_edit_zone", {
-        zone: domain,
-        "edit": JSON.stringify({ line, name, type, address, ttl }),
-      });
-      return { content: [{ type: "text", text: `DNS record updated on line ${line}` }] };
-    }
+    async ({ domain, line, name, type, address, ttl }) =>
+      handleToolCall(async () => {
+        const zone = validateDomain(domain);
+        const result = await client.uapi("DNS", "mass_edit_zone", {
+          zone,
+          edit: JSON.stringify({ line, name, type, address, ttl }),
+        });
+        return formatSuccess(`DNS record updated on line ${line}`, result.data);
+      })
   );
 
   server.tool(
@@ -81,12 +90,14 @@ export function registerDnsTools(server: McpServer, client: CpanelClient) {
       domain: z.string().describe("Domain/zone name"),
       line: z.string().describe("Line number of the record to delete (from get_dns_records)"),
     },
-    async ({ domain, line }) => {
-      const result = await client.uapi("DNS", "mass_edit_zone", {
-        zone: domain,
-        "remove": line,
-      });
-      return { content: [{ type: "text", text: `DNS record on line ${line} deleted from ${domain}` }] };
-    }
+    async ({ domain, line }) =>
+      handleToolCall(async () => {
+        const zone = validateDomain(domain);
+        const result = await client.uapi("DNS", "mass_edit_zone", {
+          zone,
+          remove: line,
+        });
+        return formatSuccess(`DNS record on line ${line} deleted from ${zone}`, result.data);
+      })
   );
 }

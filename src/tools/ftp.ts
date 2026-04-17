@@ -1,16 +1,18 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { CpanelClient } from "../cpanel-api.js";
+import { handleToolCall, formatData, formatSuccess } from "../tool-helpers.js";
 
 export function registerFtpTools(server: McpServer, client: CpanelClient) {
   server.tool(
     "list_ftp_accounts",
-    "List all FTP accounts",
+    "List all FTP accounts with disk usage",
     {},
-    async () => {
-      const result = await client.uapi("Ftp", "list_ftp_with_disk");
-      return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
-    }
+    async () =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Ftp", "list_ftp_with_disk");
+        return formatData(result.data);
+      })
   );
 
   server.tool(
@@ -23,13 +25,14 @@ export function registerFtpTools(server: McpServer, client: CpanelClient) {
       homedir: z.string().optional().describe("Home directory path (relative to account home)"),
       domain: z.string().optional().describe("Associated domain"),
     },
-    async ({ user, password, quota, homedir, domain }) => {
-      const params: Record<string, string> = { user, pass: password, quota };
-      if (homedir) params.homedir = homedir;
-      if (domain) params.domain = domain;
-      const result = await client.uapi("Ftp", "add_ftp", params);
-      return { content: [{ type: "text", text: `FTP account created: ${user}` }] };
-    }
+    async ({ user, password, quota, homedir, domain }) =>
+      handleToolCall(async () => {
+        const params: Record<string, string> = { user, pass: password, quota };
+        if (homedir) params.homedir = homedir;
+        if (domain) params.domain = domain;
+        const result = await client.uapi("Ftp", "add_ftp", params);
+        return formatSuccess(`FTP account created: ${user}`, result.data);
+      })
   );
 
   server.tool(
@@ -40,14 +43,15 @@ export function registerFtpTools(server: McpServer, client: CpanelClient) {
       domain: z.string().describe("Associated domain"),
       destroy: z.boolean().default(false).describe("Also delete the FTP user's home directory"),
     },
-    async ({ user, domain, destroy }) => {
-      const result = await client.uapi("Ftp", "delete_ftp", {
-        user,
-        domain,
-        destroy: destroy ? "1" : "0",
-      });
-      return { content: [{ type: "text", text: `FTP account deleted: ${user}@${domain}` }] };
-    }
+    async ({ user, domain, destroy }) =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Ftp", "delete_ftp", {
+          user,
+          domain,
+          destroy: destroy ? "1" : "0",
+        });
+        return formatSuccess(`FTP account deleted: ${user}@${domain}`, result.data);
+      })
   );
 
   server.tool(
@@ -58,14 +62,11 @@ export function registerFtpTools(server: McpServer, client: CpanelClient) {
       password: z.string().describe("New password"),
       domain: z.string().describe("Associated domain"),
     },
-    async ({ user, password, domain }) => {
-      const result = await client.uapi("Ftp", "passwd", {
-        user,
-        pass: password,
-        domain,
-      });
-      return { content: [{ type: "text", text: `FTP password changed for: ${user}@${domain}` }] };
-    }
+    async ({ user, password, domain }) =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Ftp", "passwd", { user, pass: password, domain });
+        return formatSuccess(`FTP password changed for: ${user}@${domain}`, result.data);
+      })
   );
 
   server.tool(
@@ -76,43 +77,43 @@ export function registerFtpTools(server: McpServer, client: CpanelClient) {
       quota: z.string().describe("New quota in MB (0 for unlimited)"),
       domain: z.string().describe("Associated domain"),
     },
-    async ({ user, quota, domain }) => {
-      const result = await client.uapi("Ftp", "setquota", {
-        user,
-        quota,
-        domain,
-      });
-      return { content: [{ type: "text", text: `FTP quota updated for ${user}@${domain}: ${quota}MB` }] };
-    }
+    async ({ user, quota, domain }) =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Ftp", "setquota", { user, quota, domain });
+        return formatSuccess(`FTP quota updated for ${user}@${domain}: ${quota}MB`, result.data);
+      })
   );
 
   server.tool(
     "list_ftp_sessions",
     "List active FTP sessions",
     {},
-    async () => {
-      const result = await client.uapi("Ftp", "list_sessions");
-      return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
-    }
+    async () =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Ftp", "list_sessions");
+        return formatData(result.data);
+      })
   );
 
   server.tool(
     "kill_ftp_session",
     "Terminate an active FTP session",
     { id: z.string().describe("Session ID to terminate (from list_ftp_sessions)") },
-    async ({ id }) => {
-      const result = await client.uapi("Ftp", "kill_session", { id });
-      return { content: [{ type: "text", text: `FTP session terminated: ${id}` }] };
-    }
+    async ({ id }) =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Ftp", "kill_session", { id });
+        return formatSuccess(`FTP session terminated: ${id}`, result.data);
+      })
   );
 
   server.tool(
     "get_ftp_port",
     "Get the FTP server port number",
     {},
-    async () => {
-      const result = await client.uapi("Ftp", "get_port");
-      return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
-    }
+    async () =>
+      handleToolCall(async () => {
+        const result = await client.uapi("Ftp", "get_port");
+        return formatData(result.data);
+      })
   );
 }
