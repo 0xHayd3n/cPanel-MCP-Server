@@ -1,6 +1,6 @@
 # cPanel MCP Server
 
-A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting accounts through AI assistants. Connects directly to cPanel's UAPI, enabling natural language management of web hosting — DNS records, email accounts, databases, domains, SSL certificates, PHP versions, cron jobs, security settings, and more.
+A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting accounts through AI assistants. Connects directly to cPanel's UAPI and API2, enabling natural language management of web hosting — DNS, DNSSEC, email (with DKIM/SPF), databases, domains, SSL/AutoSSL, PHP, cron jobs, security (WAF, IP blocker, virus scanner, 2FA), Git deployment, Node.js/Python apps, and more.
 
 ## Features
 
@@ -26,9 +26,25 @@ A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting 
 - **Autoresponders** — create, list, and delete out-of-office / autoresponse messages
 - **Email routing** — view mail domain configuration
 
+### Email Authentication (DKIM/SPF)
+- **DKIM** — enable, disable, validate, and ensure keys exist for all domains
+- **SPF** — validate and install/update SPF records
+- **PTR** — validate reverse DNS records
+
+### Email Filters & Spam
+- **Email filters** — list, delete, and trace/test filters
+- **SpamAssassin** — enable/disable, configure spam box, get settings, clear spam
+- **Greylisting** — enable/disable for all domains
+
 ### DNS Management
 - **List zones** and **parse zone records** for any domain
 - **Add, edit, and delete** DNS records (A, AAAA, CNAME, MX, TXT, SRV, CAA)
+
+### DNSSEC
+- **Enable/disable** DNSSEC for domains
+- **DS records** — fetch for registrar configuration
+- **DNSKEY export** — export zone keys
+- **NSEC3** — enable/disable (prevents zone enumeration)
 
 ### Domain Management
 - **List all domains** — main, addon, subdomains, and parked
@@ -38,7 +54,7 @@ A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting 
 - **Redirects** — create and delete URL redirects (301/302)
 
 ### Cron Job Management
-- **List, create, edit, and delete** cron jobs
+- **List, create, edit, and delete** cron jobs (via API2)
 - **Notification email** — get and set the cron notification address
 
 ### PHP Management
@@ -58,6 +74,20 @@ A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting 
 - **SSH Keys** — list, import, delete, authorize, and deauthorize keys
 - **Hotlink Protection** — get status, enable with custom settings, disable
 - **Directory Privacy** — list protected directories and add users
+
+### ModSecurity (WAF)
+- **Status** — check if ModSecurity is installed, list domain status
+- **Enable/disable** globally or per domain
+
+### Two-Factor Authentication
+- **Status** — check if 2FA is configured
+- **Setup** — generate secret/QR code, enable with verification
+- **Remove** — disable 2FA
+
+### Virus Scanner (ClamAV)
+- **Scan** — start virus scan on a directory
+- **Status** — check scan progress
+- **Results** — list infected files, quarantine/disinfect
 
 ### Metrics & Logs
 - **Bandwidth usage** statistics
@@ -79,8 +109,15 @@ A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting 
 - **Active sessions** — list and terminate
 - **Server port** info
 
-### WordPress
-- **List WordPress installations** (requires WP Toolkit / Instance Manager on server)
+### Applications & Deployment
+- **WordPress** — list installations (requires WP Toolkit / Instance Manager)
+- **Node.js/Python/Ruby apps** — register, unregister, enable, disable, install dependencies (Phusion Passenger)
+- **Git repositories** — create, list, update, delete, and deploy via `.cpanel.yml`
+
+### Account Management
+- **API tokens** — list, create, rename, and revoke
+- **Features** — list available features, check if specific features are enabled
+- **Account info** — user information, server details
 
 ## Installation and Configuration
 
@@ -124,25 +161,75 @@ Replace the placeholder values with your actual cPanel credentials.
 3. Create a new token with a descriptive name
 4. Copy the token — it won't be shown again
 
-## Available Tools (108 total)
+## Available Tools (166 total)
 
-| Category | Tools | Count |
-|----------|-------|-------|
-| File Management | `list_files`, `create_file`, `read_file`, `edit_file`, `delete_file` | 5 |
-| Disk Usage | `get_disk_usage`, `get_directory_usage` | 2 |
-| MySQL | `list_mysql_databases`, `create_mysql_database`, `delete_mysql_database`, `list_mysql_users`, `create_mysql_user`, `delete_mysql_user`, `set_mysql_privileges`, `revoke_mysql_privileges`, `get_mysql_server_info` | 9 |
-| PostgreSQL | `list_postgresql_databases`, `create_postgresql_database`, `delete_postgresql_database`, `list_postgresql_users`, `create_postgresql_user`, `delete_postgresql_user`, `set_postgresql_privileges`, `revoke_postgresql_privileges` | 8 |
-| Email | `list_email_accounts`, `create_email_account`, `delete_email_account`, `change_email_password`, `change_email_quota`, `list_email_forwarders`, `create_email_forwarder`, `delete_email_forwarder`, `list_autoresponders`, `create_autoresponder`, `delete_autoresponder`, `get_email_routing` | 12 |
-| DNS | `list_dns_zones`, `get_dns_records`, `add_dns_record`, `edit_dns_record`, `delete_dns_record` | 5 |
-| Domains | `list_domains`, `get_domain_info`, `list_subdomains`, `create_subdomain`, `delete_subdomain`, `list_addon_domains`, `create_addon_domain`, `delete_addon_domain`, `list_parked_domains`, `create_parked_domain`, `delete_parked_domain`, `list_redirects`, `create_redirect`, `delete_redirect` | 14 |
-| Cron Jobs | `list_cron_jobs`, `create_cron_job`, `edit_cron_job`, `delete_cron_job`, `get_cron_email`, `set_cron_email` | 6 |
-| PHP | `list_php_versions`, `get_php_version_for_domain`, `set_php_version_for_domain`, `get_php_ini_directives`, `set_php_ini_directives` | 5 |
-| SSL/TLS | `list_ssl_certificates`, `get_ssl_status`, `install_ssl_certificate`, `delete_ssl_certificate`, `generate_ssl_csr`, `get_autossl_status`, `trigger_autossl`, `list_ssl_keys` | 8 |
-| Security | `list_blocked_ips`, `block_ip`, `unblock_ip`, `list_ssh_keys`, `import_ssh_key`, `delete_ssh_key`, `authorize_ssh_key`, `deauthorize_ssh_key`, `get_hotlink_protection`, `enable_hotlink_protection`, `disable_hotlink_protection`, `list_directory_privacy`, `add_directory_user` | 13 |
-| Metrics & Logs | `get_bandwidth_usage`, `get_resource_usage`, `get_error_log`, `get_visitors_stats`, `get_account_stats` | 5 |
-| Backups | `create_full_backup`, `list_backups`, `create_database_backup`, `restore_database_backup`, `create_homedir_backup`, `restore_file_backup`, `create_email_backup` | 7 |
-| FTP | `list_ftp_accounts`, `create_ftp_account`, `delete_ftp_account`, `change_ftp_password`, `change_ftp_quota`, `list_ftp_sessions`, `kill_ftp_session`, `get_ftp_port` | 8 |
-| WordPress | `list_wordpress_installations` | 1 |
+| Category | Count |
+|----------|-------|
+| File Management | 5 |
+| Disk Usage | 2 |
+| MySQL | 9 |
+| PostgreSQL | 8 |
+| Email (accounts, forwarders, autoresponders) | 12 |
+| Email Authentication (DKIM/SPF/PTR) | 7 |
+| Email Filters & Spam | 12 |
+| DNS | 5 |
+| DNSSEC | 6 |
+| Domains (addon, sub, parked, redirects) | 14 |
+| Cron Jobs | 6 |
+| PHP | 5 |
+| SSL/TLS & AutoSSL | 8 |
+| Security (IP blocker, SSH, hotlink, privacy) | 13 |
+| ModSecurity (WAF) | 5 |
+| Two-Factor Auth | 4 |
+| Virus Scanner (ClamAV) | 4 |
+| Metrics & Logs | 5 |
+| Backups | 7 |
+| FTP | 8 |
+| WordPress | 1 |
+| Passenger Apps (Node.js/Python/Ruby) | 6 |
+| Git Version Control & Deployment | 6 |
+| API Tokens | 4 |
+| Account & Server Info | 4 |
+
+## Architecture
+
+```
+src/
+├── index.ts           # MCP server entry point — registers all 25 tool modules
+├── cpanel-api.ts      # cPanel API client (UAPI + API2, token auth, error handling)
+└── tools/
+    ├── files.ts           # File operations (Fileman)
+    ├── disk.ts            # Disk usage (Quota, DiskUsage)
+    ├── mysql.ts           # MySQL databases (Mysql)
+    ├── postgresql.ts      # PostgreSQL databases (Postgresql)
+    ├── email.ts           # Email accounts, forwarders, autoresponders (Email)
+    ├── email-auth.ts      # DKIM, SPF, PTR validation (EmailAuth)
+    ├── email-filters.ts   # Filters, SpamAssassin, Greylisting
+    ├── dns.ts             # DNS zone records (DNS)
+    ├── dnssec.ts          # DNSSEC management (DNSSEC)
+    ├── domains.ts         # Domains, subdomains, redirects
+    ├── cron.ts            # Cron jobs (API2 Cron)
+    ├── php.ts             # PHP version & INI (LangPHP)
+    ├── ssl.ts             # SSL/TLS & AutoSSL (SSL)
+    ├── security.ts        # IP blocker, SSH, hotlink, privacy
+    ├── modsecurity.ts     # ModSecurity WAF
+    ├── twofa.ts           # Two-factor authentication
+    ├── virus-scanner.ts   # ClamAV virus scanner
+    ├── metrics.ts         # Bandwidth, resources, logs, stats
+    ├── backups.ts         # Full & partial backups, restore
+    ├── ftp.ts             # FTP accounts & sessions
+    ├── wordpress.ts       # WordPress installations
+    ├── passenger.ts       # Node.js/Python/Ruby apps
+    ├── version-control.ts # Git repos & deployment
+    ├── tokens.ts          # API token management
+    └── features.ts        # Feature checks & server info
+```
+
+## API Compatibility
+
+- **UAPI** (preferred) — used for all modules except cron jobs
+- **API2** (legacy) — used for cron jobs, as cPanel has no UAPI equivalent for this module
+- Both are called through the same authenticated API client with automatic error handling
 
 ## Security
 

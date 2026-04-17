@@ -8,8 +8,8 @@ export function registerCronTools(server: McpServer, client: CpanelClient) {
     "List all cron jobs on the account",
     {},
     async () => {
-      const result = await client.uapi("CronJob", "list_cron");
-      return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
+      const result = await client.api2("Cron", "fetchcron");
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );
 
@@ -25,7 +25,7 @@ export function registerCronTools(server: McpServer, client: CpanelClient) {
       weekday: z.string().default("*").describe("Day of week (0-6, 0=Sunday, or *)"),
     },
     async ({ command, minute, hour, day, month, weekday }) => {
-      const result = await client.uapi("CronJob", "add_line", {
+      const result = await client.api2("Cron", "add_line", {
         command,
         minute,
         hour,
@@ -57,7 +57,7 @@ export function registerCronTools(server: McpServer, client: CpanelClient) {
       weekday: z.string().default("*").describe("Day of week (0-6, 0=Sunday, or *)"),
     },
     async ({ linekey, command, minute, hour, day, month, weekday }) => {
-      const result = await client.uapi("CronJob", "edit_line", {
+      const result = await client.api2("Cron", "edit_line", {
         linekey,
         command,
         minute,
@@ -75,7 +75,7 @@ export function registerCronTools(server: McpServer, client: CpanelClient) {
     "Delete a cron job",
     { linekey: z.string().describe("Unique line key of the cron job to delete") },
     async ({ linekey }) => {
-      const result = await client.uapi("CronJob", "remove_line", { linekey });
+      const result = await client.api2("Cron", "remove_line", { linekey });
       return { content: [{ type: "text", text: `Cron job deleted: ${linekey}` }] };
     }
   );
@@ -85,8 +85,8 @@ export function registerCronTools(server: McpServer, client: CpanelClient) {
     "Get the email address for cron job notifications",
     {},
     async () => {
-      const result = await client.uapi("CronJob", "get_email");
-      return { content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }] };
+      const result = await client.api2("Cron", "get_email");
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
   );
 
@@ -95,7 +95,7 @@ export function registerCronTools(server: McpServer, client: CpanelClient) {
     "Set the email address for cron job notifications",
     { email: z.string().describe("Email address for cron notifications") },
     async ({ email }) => {
-      const result = await client.uapi("CronJob", "set_email", { email });
+      const result = await client.api2("Cron", "set_email", { email });
       return { content: [{ type: "text", text: `Cron notification email set to: ${email}` }] };
     }
   );
