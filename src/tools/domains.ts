@@ -2,7 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { CpanelClient } from "../cpanel-api.js";
 import { handleToolCall, formatData, formatSuccess } from "../tool-helpers.js";
-import { validateDomain } from "../validation.js";
+import { validateDomain, validatePath } from "../validation.js";
 
 export function registerDomainTools(server: McpServer, client: CpanelClient) {
   server.tool(
@@ -53,7 +53,10 @@ export function registerDomainTools(server: McpServer, client: CpanelClient) {
       handleToolCall(async () => {
         const d = validateDomain(domain);
         const params: Record<string, string> = { domain: subdomain, rootdomain: d };
-        if (document_root) params.dir = document_root;
+        if (document_root) {
+          validatePath(document_root);
+          params.dir = document_root;
+        }
         const data = await client.api2("SubDomain", "addsubdomain", params);
         return formatSuccess(`Subdomain created: ${subdomain}.${d}`, data);
       })
@@ -94,6 +97,7 @@ export function registerDomainTools(server: McpServer, client: CpanelClient) {
     async ({ domain, subdomain, document_root }) =>
       handleToolCall(async () => {
         const d = validateDomain(domain);
+        validatePath(document_root);
         const data = await client.api2("AddonDomain", "addaddondomain", {
           newdomain: d,
           subdomain,
