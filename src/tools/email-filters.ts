@@ -16,6 +16,68 @@ export function registerEmailFilterTools(server: McpServer, client: CpanelClient
   );
 
   server.tool(
+    "add_email_filter",
+    "Create or update an email filter. Rules are OR'd/AND'd via each rule's opt field; the last rule's opt is ignored by cPanel.",
+    {
+      account: z.string().describe("Email account (user@domain.com) or empty for main account"),
+      filtername: z.string().describe("Name for the filter (reusing an existing name overwrites it)"),
+      rules: z
+        .array(
+          z.object({
+            part: z
+              .string()
+              .describe('Header/part to test, e.g. "$header_from:", "$header_subject:", "$message_body"'),
+            match: z
+              .string()
+              .describe('Match operator: contains, does not contain, is, is not, begins, ends, matches, does not match'),
+            val: z.string().describe("Value to match against"),
+            opt: z
+              .string()
+              .default("or")
+              .describe('How this rule joins the NEXT rule: "or" or "and"'),
+          })
+        )
+        .min(1)
+        .describe("One or more match rules"),
+      actions: z
+        .array(
+          z.object({
+            action: z
+              .string()
+              .default("save")
+              .describe('Action: save, deliver, fail, finish, pipe, addheader'),
+            dest: z
+              .string()
+              .describe('Destination: "/dev/null" to discard, or a maildir path, or address'),
+          })
+        )
+        .min(1)
+        .describe("One or more actions to take on match"),
+    },
+    async ({ account, filtername, rules, actions }) =>
+      handleToolCall(async () => {
+        const params: Record<string, string> = { account, filtername };
+
+        rules.forEach((r, i) => {
+          params[`part${i}`] = r.part;
+          params[`match${i}`] = r.match;
+          params[`val${i}`] = r.val;
+          params[`opt${i}`] = r.opt ?? "or";
+        });
+
+        actions.forEach((a, i) => {
+          params[`action${i}`] = a.action ?? "save";
+          params[`dest${i}`] = a.dest;
+        });
+
+        console.error(`[add_email_filter] ${filtername}: ${rules.length} rule(s), ${actions.length} action(s)`);
+
+        const result = await client.uapiPost("Email", "store_filter", params);
+        return formatSuccess(`Email filter saved: ${filtername}`, result.data);
+      })
+  );
+
+  server.tool(
     "delete_email_filter",
     "Delete an email filter",
     {

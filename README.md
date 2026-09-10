@@ -31,7 +31,7 @@ A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting 
 - **PTR** — validate reverse DNS records
 
 ### Email Filters & Spam
-- **Email filters** — list, delete, and trace/test filters
+- **Email filters** — list, add/update, delete, and trace/test filters
 - **SpamAssassin** — enable/disable, configure spam box, get settings, clear spam
 - **Greylisting** — enable/disable for all domains
 
@@ -181,7 +181,7 @@ Replace the placeholder values with your actual cPanel credentials.
 | PostgreSQL | 8 |
 | Email (accounts, forwarders, autoresponders) | 12 |
 | Email Authentication (DKIM/SPF/PTR) | 7 |
-| Email Filters & Spam | 12 |
+| Email Filters & Spam | 13 |
 | DNS | 4 |
 | DNSSEC | 6 |
 | Domains (addon, sub, parked, redirects) | 14 |
