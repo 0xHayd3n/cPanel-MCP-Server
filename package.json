@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "test": "npm run build && node --test test/security-regression.test.mjs",
     "start": "node build/index.js",
     "dev": "tsc --watch"
   },

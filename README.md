@@ -160,6 +160,7 @@ Replace the placeholder values with your actual cPanel credentials.
 | `CPANEL_USERNAME` | Yes | — | cPanel account username |
 | `CPANEL_API_TOKEN` | Yes | — | API token for authentication |
 | `CPANEL_SERVER_URL` | Yes | — | cPanel server URL (e.g., `https://example.com:2083`) |
+| `CPANEL_ALLOW_INSECURE_HTTP` | No | `false` | Allow plain HTTP only for explicit loopback development endpoints |
 | `CPANEL_TIMEOUT_MS` | No | `30000` | Request timeout in milliseconds |
 | `CPANEL_VERIFY_SSL` | No | `true` | Set to `false` to disable SSL certificate verification (for self-signed certs) |
 
@@ -249,6 +250,8 @@ src/
 ## Security
 
 Your cPanel credentials are loaded from environment variables at runtime and are never stored in the repository. The API token should be treated as a secret — do not commit it to version control.
+
+The server requires HTTPS by default. Plain HTTP is accepted only for parsed loopback hosts when `CPANEL_ALLOW_INSECURE_HTTP=true`; remote HTTP endpoints are always rejected. Path validation is defense in depth, while cPanel remains responsible for enforcing account-home containment on the remote filesystem.
 
 ## License
 
