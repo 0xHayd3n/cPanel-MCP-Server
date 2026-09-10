@@ -2,6 +2,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { CpanelClient } from "../cpanel-api.js";
 import { handleToolCall, formatData, formatSuccess } from "../tool-helpers.js";
+import { validatePath } from "../validation.js";
 
 export function registerFtpTools(server: McpServer, client: CpanelClient) {
   server.tool(
@@ -28,7 +29,10 @@ export function registerFtpTools(server: McpServer, client: CpanelClient) {
     async ({ user, password, quota, homedir, domain }) =>
       handleToolCall(async () => {
         const params: Record<string, string> = { user, pass: password, quota };
-        if (homedir) params.homedir = homedir;
+        if (homedir) {
+          validatePath(homedir);
+          params.homedir = homedir;
+        }
         if (domain) params.domain = domain;
         const result = await client.uapi("Ftp", "add_ftp", params);
         return formatSuccess(`FTP account created: ${user}`, result.data);

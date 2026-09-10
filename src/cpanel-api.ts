@@ -55,6 +55,12 @@ export class CpanelClient {
       );
     }
 
+    if (!serverUrl.startsWith("https://") && !serverUrl.startsWith("http://localhost") && !serverUrl.startsWith("http://127.0.0.1")) {
+      console.warn(
+        "[Security Warning] CPANEL_SERVER_URL is using unencrypted HTTP. HTTPS is strongly recommended to protect credentials."
+      );
+    }
+
     this.username = username;
     this.apiToken = apiToken;
     this.baseUrl = serverUrl.replace(/\/+$/, "");

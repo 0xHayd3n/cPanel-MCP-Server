@@ -27,6 +27,9 @@ export function validateDomain(domain: string): string {
 }
 
 export function validatePath(path: string): string {
+  if (path.includes("\0")) {
+    throw new CpanelApiError("Null bytes are not allowed in file paths");
+  }
   if (PATH_TRAVERSAL_RE.test(path)) {
     throw new CpanelApiError(
       `Path traversal detected — '..' segments are not allowed: ${path}`
