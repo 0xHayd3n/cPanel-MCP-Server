@@ -36,6 +36,38 @@ export class CpanelApiError extends Error {
   }
 }
 
+function isLoopbackHostname(hostname: string): boolean {
+  if (hostname === "localhost" || hostname === "[::1]") return true;
+
+  const octets = hostname.split(".");
+  return (
+    octets.length === 4 &&
+    octets[0] === "127" &&
+    octets.every((octet) => /^\d+$/.test(octet) && Number(octet) <= 255)
+  );
+}
+
+function parseServerUrl(serverUrl: string): URL {
+  let parsed: URL;
+  try {
+    parsed = new URL(serverUrl);
+  } catch {
+    throw new CpanelApiError("Invalid CPANEL_SERVER_URL");
+  }
+
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new CpanelApiError("CPANEL_SERVER_URL must use HTTP or HTTPS");
+  }
+  if (parsed.username || parsed.password) {
+    throw new CpanelApiError("CPANEL_SERVER_URL must not contain credentials");
+  }
+  if (parsed.search || parsed.hash) {
+    throw new CpanelApiError("CPANEL_SERVER_URL must not contain a query or fragment");
+  }
+
+  return parsed;
+}
+
 export class CpanelClient {
   private readonly baseUrl: string;
   private readonly username: string;
@@ -55,15 +87,23 @@ export class CpanelClient {
       );
     }
 
-    if (!serverUrl.startsWith("https://") && !serverUrl.startsWith("http://localhost") && !serverUrl.startsWith("http://127.0.0.1")) {
+    const parsedServerUrl = parseServerUrl(serverUrl);
+    if (parsedServerUrl.protocol === "http:") {
+      const allowInsecureHttp =
+        process.env.CPANEL_ALLOW_INSECURE_HTTP === "true";
+      if (!allowInsecureHttp || !isLoopbackHostname(parsedServerUrl.hostname)) {
+        throw new CpanelApiError(
+          "CPANEL_SERVER_URL must use HTTPS. Plain HTTP is only allowed for loopback hosts when CPANEL_ALLOW_INSECURE_HTTP=true."
+        );
+      }
       console.warn(
-        "[Security Warning] CPANEL_SERVER_URL is using unencrypted HTTP. HTTPS is strongly recommended to protect credentials."
+        "[Security Warning] CPANEL_SERVER_URL is using explicitly enabled loopback HTTP. Credentials are not encrypted."
       );
     }
 
     this.username = username;
     this.apiToken = apiToken;
-    this.baseUrl = serverUrl.replace(/\/+$/, "");
+    this.baseUrl = parsedServerUrl.href.replace(/\/+$/, "");
     this.timeoutMs = Number(process.env.CPANEL_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS;
 
     const rejectUnauthorized = process.env.CPANEL_VERIFY_SSL !== "false";

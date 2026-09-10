@@ -26,14 +26,36 @@ export function validateDomain(domain: string): string {
   return cleaned;
 }
 
-export function validatePath(path: string): string {
-  if (path.includes("\0")) {
-    throw new CpanelApiError("Null bytes are not allowed in file paths");
+function decodeValidPercentEscapes(path: string): string {
+  return path.replace(/%([0-9a-fA-F]{2})/g, (_escape, hex: string) =>
+    String.fromCharCode(Number.parseInt(hex, 16))
+  );
+}
+
+function pathVariants(path: string): string[] {
+  const variants = [path];
+  let current = path;
+
+  for (let pass = 0; pass < 3; pass++) {
+    const decoded = decodeValidPercentEscapes(current);
+    if (decoded === current) break;
+    variants.push(decoded);
+    current = decoded;
   }
-  if (PATH_TRAVERSAL_RE.test(path)) {
-    throw new CpanelApiError(
-      `Path traversal detected — '..' segments are not allowed: ${path}`
-    );
+
+  return variants;
+}
+
+export function validatePath(path: string): string {
+  for (const candidate of pathVariants(path)) {
+    if (candidate.includes("\0")) {
+      throw new CpanelApiError("Null bytes are not allowed in file paths");
+    }
+    if (PATH_TRAVERSAL_RE.test(candidate)) {
+      throw new CpanelApiError(
+        `Path traversal detected — '..' segments are not allowed: ${path}`
+      );
+    }
   }
   return path;
 }
