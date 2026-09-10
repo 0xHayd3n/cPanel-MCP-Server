@@ -105,6 +105,10 @@ test("validatePath rejects raw and encoded traversal or null bytes", () => {
     "public_html/%2e%2e/private",
     "public_html/%252e%252e%252fprivate",
     "public_html/%00private",
+    "public_html/%2e%2e/private%",
+    "public_html/%2e%2e%2fprivate/%FF",
+    "public_html/%252e%252e/private%",
+    "public_html/%25%32%65%25%32%65%25%32%66private",
   ]) {
     assert.throws(() => validatePath(path), CpanelApiError, path);
   }

@@ -26,19 +26,21 @@ export function validateDomain(domain: string): string {
   return cleaned;
 }
 
+function decodeValidPercentEscapes(path: string): string {
+  return path.replace(/%([0-9a-fA-F]{2})/g, (_escape, hex: string) =>
+    String.fromCharCode(Number.parseInt(hex, 16))
+  );
+}
+
 function pathVariants(path: string): string[] {
   const variants = [path];
   let current = path;
 
   for (let pass = 0; pass < 3; pass++) {
-    try {
-      const decoded = decodeURIComponent(current);
-      if (decoded === current) break;
-      variants.push(decoded);
-      current = decoded;
-    } catch {
-      break;
-    }
+    const decoded = decodeValidPercentEscapes(current);
+    if (decoded === current) break;
+    variants.push(decoded);
+    current = decoded;
   }
 
   return variants;
