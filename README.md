@@ -59,7 +59,7 @@ A comprehensive Model Context Protocol (MCP) server for managing cPanel hosting 
 ### PHP Management
 - **List installed PHP versions** available on the server
 - **Get/set PHP version** per domain
-- **PHP INI directives** — read and modify (memory_limit, upload_max_filesize, etc.)
+- **PHP INI directives** — read and modify (memory_limit, upload_max_filesize, etc.) for the account or per domain
 
 ### SSL/TLS Management
 - **List certificates** and **SSL status** per domain
@@ -186,7 +186,7 @@ Replace the placeholder values with your actual cPanel credentials.
 | DNSSEC | 6 |
 | Domains (addon, sub, parked, redirects) | 14 |
 | Cron Jobs | 6 |
-| PHP | 5 |
+| PHP | 6 |
 | SSL/TLS & AutoSSL | 8 |
 | Security (IP blocker, SSH, hotlink, privacy) | 13 |
 | ModSecurity (WAF) | 5 |
