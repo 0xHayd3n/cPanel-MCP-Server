@@ -18,13 +18,12 @@ export function registerPhpTools(server: McpServer, client: CpanelClient) {
 
   server.tool(
     "get_php_version_for_domain",
-    "Get the current PHP version assigned to a domain",
+    "Get the current PHP version assigned to a domain (for example ea-php83), and whether it runs under PHP-FPM",
     { domain: z.string().describe("Domain name to check") },
     async ({ domain }) =>
       handleToolCall(async () => {
         const d = validateDomain(domain);
-        const result = await client.uapi("LangPHP", "php_get_domain_handler", {
-          type: "home",
+        const result = await client.uapi("LangPHP", "php_get_vhost_versions", {
           vhost: d,
         });
         return formatData(result.data);
